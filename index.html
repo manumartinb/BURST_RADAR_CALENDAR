@@ -81,14 +81,29 @@ section.evidence { max-width:1200px; margin:0 auto; display:flex; flex-direction
 <div id="chart" style="height:580px;"></div>
 
 <div class="note">
-  <strong>Formula</strong>: <code>BURST_RADAR = 100 x (1 - pctE( IV_25d_front / IV_25d_back ))</code> &middot;
-  front = expiraciones SPX calls con DTE 25-35 (pata corta del calendar), back = DTE 38-52 (pata larga),
-  IV a delta 25, snapshot 10:30 ET, percentil expanding (warmup 252d, sin lookahead).
-  <br><strong>Mecanica</strong>: cuando la IV del vencimiento cercano esta historicamente BARATA respecto al lejano
-  (contango pronunciado en la zona del calendar), la term structure esta "tensada como un muelle". Al normalizarse
-  durante la vida del trade, la evolucion de IV favorece sistematicamente al calendar (fenomeno <strong>BURST</strong>:
-  ganancia inusual sin movimiento del SPX). Bandas: <strong>VERDE</strong> &ge;80, <strong>AMBAR</strong> 20-80, <strong>ROJO</strong> &le;20.
-  <br><strong>Grafico + panel = regimen DIARIO a hoy</strong> (ultima fecha de mercado en el surface store 10:30).
+  <strong>FORMULA (desgranada paso a paso)</strong>:
+  <br><strong>Paso 1 &middot; bandas</strong>: cada dia, snapshot 10:30 ET de la cadena SPX. Se toman las expiraciones de CALLS
+  con DTE 25-35 (zona de la <strong>pata corta</strong> del calendar Elite) y DTE 38-52 (zona de la <strong>pata larga</strong>).
+  De cada expiracion se lee su <code>iv_25</code> (IV al delta 25).
+  <br><strong>Paso 2 &middot; agregacion robusta</strong>: <code>IV_front</code> = media de las iv_25 de la banda corta;
+  <code>IV_back</code> = media de la banda larga. Filtro de calidad: se descartan expiraciones cuya iv_25 se desvie
+  mas de 2x (o menos de 0.5x) de la mediana de su banda ese dia (protege de quotes basura en festivos/dias parciales).
+  <br><strong>Paso 3 &middot; ratio</strong>: <code>CAL_RATIO = IV_front / IV_back</code>. Es la relatividad de precios entre las
+  dos patas del calendar expresada en volatilidad. CAL_RATIO &lt; 1 = contango (front mas barata que back).
+  <br><strong>Paso 4 &middot; percentil expanding</strong>: <code>pctE(t)</code> = fraccion de los dias HISTORICOS (solo &lt; t,
+  warmup 252 dias, cero lookahead) con CAL_RATIO &le; al de hoy.
+  <br><strong>Paso 5 &middot; score</strong>: <code>BURST_RADAR = 100 x (1 - pctE)</code>. Se invierte porque ratio BAJO
+  (contango historicamente extremo) = muelle cargado = pro-BURST. Semaforo: <strong>VERDE</strong> &ge;80,
+  <strong>AMBAR</strong> 20-80, <strong>ROJO</strong> &le;20.
+  <br><br><strong>LOGICA</strong>: cuando la IV del vencimiento cercano esta historicamente BARATA respecto al lejano,
+  la term structure esta "tensada como un muelle". Al normalizarse durante la vida del trade, la evolucion de IV
+  favorece sistematicamente al calendar (fenomeno <strong>BURST</strong>: ganancia inusual sin movimiento del SPX).
+  <br><br><strong>NATURALEZA: senal de REGIMEN, no de trade</strong>. El radar produce UN valor por dia, comun a TODOS
+  los calendars que se abran ese dia (no distingue strike ni right). Su gemelo trade-level es
+  <strong>BURST_SCORE_PURE</strong> (ex-post, rango [-1,+1]): mide el burst REALIZADO de cada trade individual
+  (<code>burst_pure = TXSPOT - (TX_M100 - TX000_M100)</code>). Relacion verificada entre ambos: r=+0.39 trade-level,
+  r=+0.46 day-level, 6/6 anos; los TOP-200 trades por burst realizado entraron con radar medio 75.5 vs 46.4 los BOT-200.
+  <br><br><strong>Grafico + panel = regimen DIARIO a hoy</strong> (ultima fecha de mercado en el surface store 10:30).
   <strong>Tablas de abajo = backtest frozen</strong> (estudio 2026-06-10, Calendar Elite V1, 3,375 trades 2020-2025).
 </div>
 

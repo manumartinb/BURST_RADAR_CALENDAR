@@ -40,6 +40,8 @@ MIN_SNAP_ROWS = 1000   # dia parcial si el snapshot 10:30 tiene menos filas
 FILE_RE = re.compile(r'^30MINDATA_(\d{4}-\d{2}-\d{2})\.csv$', re.I)
 REQUIRED = ['date','ms_of_day','underlying_price','expiration','right','strike',
             'bid','ask','mid','delta','implied_vol']
+OPTIONAL = ['IV_BS']   # fallback cuando implied_vol viene vacio (streaming post 2026-04)
+IV_SENTINEL_MIN = 0.01 # IV_BS sentinel 0.0001 = sin calidad -> tratar como NaN
 
 def log(m): print(f"[BURST-RADAR {datetime.now():%H:%M:%S}] {m}", flush=True)
 
@@ -83,7 +85,8 @@ def compute_surface_rows_for_file(path, snapshot_hhmm=SNAPSHOT_HHMM):
     """Identica a build_calendar_surface_1030_store.compute_surface_rows_for_file.
     Devuelve (rows, n_snap_rows)."""
     try:
-        df = pd.read_csv(path, usecols=REQUIRED, low_memory=False)
+        wanted = set(REQUIRED + OPTIONAL)
+        df = pd.read_csv(path, usecols=lambda c: c in wanted, low_memory=False)
     except Exception as exc:
         log(f"WARN read failed {Path(path).name}: {exc}")
         return [], 0
@@ -93,8 +96,15 @@ def compute_surface_rows_for_file(path, snapshot_hhmm=SNAPSHOT_HHMM):
     snap['date_us'] = pd.to_datetime(snap['date'], errors='coerce').dt.normalize()
     snap['expiration'] = pd.to_datetime(snap['expiration'], errors='coerce').dt.normalize()
     snap['right_norm'] = snap['right'].map(normalize_right)
-    for c in ['underlying_price','strike','bid','ask','mid','delta','implied_vol']:
+    num_cols = ['underlying_price','strike','bid','ask','mid','delta','implied_vol']
+    if 'IV_BS' in snap.columns: num_cols.append('IV_BS')
+    for c in num_cols:
         snap[c] = pd.to_numeric(snap[c], errors='coerce')
+    # Fallback: implied_vol vacio (streaming post 2026-04) -> usar IV_BS local
+    if 'IV_BS' in snap.columns:
+        snap['implied_vol'] = snap['implied_vol'].fillna(snap['IV_BS'])
+    # Sentinel guard: IV degenerada (< 0.01, ej. 0.0001) = sin calidad -> NaN
+    snap.loc[snap['implied_vol'] < IV_SENTINEL_MIN, 'implied_vol'] = np.nan
     snap = snap.dropna(subset=['date_us','expiration','right_norm','underlying_price','strike','mid','implied_vol'])
     if snap.empty: return [], n_snap
     snap['dte_days'] = (snap['expiration'] - snap['date_us']).dt.days
@@ -141,9 +151,13 @@ def compute_surface_rows_for_file(path, snapshot_hhmm=SNAPSHOT_HHMM):
 # 1. Surface incremental
 # ============================================================
 def update_surface_incremental():
-    """Appendea dias nuevos al parquet. Devuelve (n_appended, n_partial_skipped)."""
+    """Appendea dias FALTANTES al parquet (no solo > max: tambien huecos intermedios
+    de los ultimos 180 dias, p.ej. dias saltados por datos parciales que luego se
+    completaron). Devuelve (n_appended, n_partial_skipped)."""
     surf = pd.read_parquet(PARQUET)
-    max_date = pd.to_datetime(surf['date_us']).max().normalize()
+    existing = set(pd.to_datetime(surf['date_us']).dt.normalize())
+    max_date = max(existing)
+    floor = max_date - pd.Timedelta(days=180)
     log(f"parquet max date: {max_date.date()} ({len(surf):,} rows)")
 
     new_files = []
@@ -151,8 +165,11 @@ def update_surface_incremental():
         m = FILE_RE.match(p.name)
         if not m: continue
         dt = pd.to_datetime(m.group(1), errors='coerce')
-        if pd.isna(dt) or dt.normalize() <= max_date: continue
-        new_files.append((dt.normalize(), p))
+        if pd.isna(dt): continue
+        dt = dt.normalize()
+        if dt in existing: continue
+        if dt <= max_date and dt < floor: continue  # huecos solo en ventana 180d
+        new_files.append((dt, p))
     if not new_files:
         log("surface al dia (sin 30MINDATA nuevos)")
         return 0, 0
@@ -183,6 +200,18 @@ def update_surface_incremental():
 # ============================================================
 # 2. Recompute RADAR_LITE
 # ============================================================
+def _band_mean_robust(g):
+    """Media de iv_25 con filtro de calidad: descarta expiraciones cuya iv_25 se
+    desvia mas de 2x (o menos de 0.5x) de la MEDIANA de la banda ese dia.
+    Motivo: expiraciones con quotes basura (ej. 2026-05-25 festivo, DTE45 iv=1.29
+    vs 0.127 vecinas) contaminaban la media y producian RADAR espureo."""
+    v = g.dropna()
+    if len(v) == 0: return np.nan
+    med = v.median()
+    if med <= 0: return np.nan
+    clean = v[(v >= 0.5 * med) & (v <= 2.0 * med)]
+    return clean.mean() if len(clean) else np.nan
+
 def compute_radar_series():
     """CAL_RATIO_25_C por dia -> expanding pct -> RADAR_LITE. Devuelve DataFrame."""
     surf = pd.read_parquet(PARQUET, columns=['date_us','right_norm','dte_days','iv_25'])
@@ -190,8 +219,8 @@ def compute_radar_series():
     surf['date'] = pd.to_datetime(surf['date_us'])
     front = surf[(surf['dte_days'] >= FRONT_BAND[0]) & (surf['dte_days'] <= FRONT_BAND[1])]
     back  = surf[(surf['dte_days'] >= BACK_BAND[0])  & (surf['dte_days'] <= BACK_BAND[1])]
-    f = front.groupby('date')['iv_25'].mean().rename('F_iv_25_C')
-    b = back.groupby('date')['iv_25'].mean().rename('B_iv_25_C')
+    f = front.groupby('date')['iv_25'].apply(_band_mean_robust).rename('F_iv_25_C')
+    b = back.groupby('date')['iv_25'].apply(_band_mean_robust).rename('B_iv_25_C')
     df = pd.concat([f, b], axis=1).dropna().sort_index()
     df['CAL_RATIO_25_C'] = df['F_iv_25_C'] / df['B_iv_25_C']
 
