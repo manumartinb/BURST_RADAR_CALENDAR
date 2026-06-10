@@ -67,7 +67,7 @@ section.evidence { max-width:1200px; margin:0 auto; display:flex; flex-direction
       <div class="label">BURST RADAR <span id="ld-date">--</span></div>
       <div><span class="v" id="ld-radar">--</span><span class="regime" id="lr-radar">--</span></div>
       <div class="mini"><span id="ld-days">--</span> dias en regimen actual</div>
-      <div class="hint">&uarr; mas alto = muelle mas cargado (VERDE &ge;80)</div>
+      <div class="hint">&uarr; mas alto = mas roll-down a favor (VERDE &ge;80)</div>
     </div>
     <div class="latest">
       <div class="label">CAL RATIO (front/back)</div>
@@ -85,6 +85,11 @@ section.evidence { max-width:1200px; margin:0 auto; display:flex; flex-direction
   <br><strong>Paso 1 &middot; bandas</strong>: cada dia, snapshot 10:30 ET de la cadena SPX. Se toman las expiraciones de CALLS
   con DTE 25-35 (zona de la <strong>pata corta</strong> del calendar Elite) y DTE 38-52 (zona de la <strong>pata larga</strong>).
   De cada expiracion se lee su <code>iv_25</code> (IV al delta 25).
+  <br><em>Nota sensor</em>: CALLS delta-25 es el instrumento de MEDIDA, no una restriccion del universo. La senal de
+  term structure es casi identica midiendola en PUTS o en ATM (rho 0.85-0.94 entre variantes; r vs burst: calls25
+  +0.390, calls ATM +0.384, puts ATM +0.334, puts25 +0.319) y el radar predice el burst de calendars PUT (r=+0.42)
+  y CALL (r=+0.36) por igual. La variante ATM coincide con los deltas tipicos de los calendars Elite (~45-55):
+  da la misma lectura; delta-25 quedo como canonica por ser la congelada en el estudio.
   <br><strong>Paso 2 &middot; agregacion robusta</strong>: <code>IV_front</code> = media de las iv_25 de la banda corta;
   <code>IV_back</code> = media de la banda larga. Filtro de calidad: se descartan expiraciones cuya iv_25 se desvie
   mas de 2x (o menos de 0.5x) de la mediana de su banda ese dia (protege de quotes basura en festivos/dias parciales).
@@ -95,9 +100,15 @@ section.evidence { max-width:1200px; margin:0 auto; display:flex; flex-direction
   <br><strong>Paso 5 &middot; score</strong>: <code>BURST_RADAR = 100 x (1 - pctE)</code>. Se invierte porque ratio BAJO
   (contango historicamente extremo) = muelle cargado = pro-BURST. Semaforo: <strong>VERDE</strong> &ge;80,
   <strong>AMBAR</strong> 20-80, <strong>ROJO</strong> &le;20.
-  <br><br><strong>LOGICA</strong>: cuando la IV del vencimiento cercano esta historicamente BARATA respecto al lejano,
-  la term structure esta "tensada como un muelle". Al normalizarse durante la vida del trade, la evolucion de IV
-  favorece sistematicamente al calendar (fenomeno <strong>BURST</strong>: ganancia inusual sin movimiento del SPX).
+  <br><br><strong>LOGICA (roll-down carry)</strong>: en un calendar vendes la pata corta y compras la larga. La intuicion
+  "vender caro" es correcta, pero el precio relevante NO es el de la front vs la back HOY, sino el de la front vs
+  <em>su propio futuro</em>: en contango pronunciado (ratio bajo), la pata corta envejece bajando por una curva empinada
+  (DTE 30 &rarr; 15 = IV cada vez menor), de modo que la vendes "cara respecto a donde estara en 15 dias". Ese
+  deslizamiento (roll-down) derrite la IV de la pata corta mas rapido que la de la larga (curva mas plana en su zona)
+  y genera el <strong>BURST</strong>: ganancia inusual sin movimiento del SPX. Es la misma fisica que el carry de
+  futuros VIX en contango. <em>Evidencia del mecanismo</em>: el momentum del radar correlaciona POSITIVO con el burst
+  (+0.26) &mdash; si fuera "normalizacion/mean-reversion" del ratio seria negativo. Es carry por persistencia de la
+  pendiente, no un muelle que rebota.
   <br><br><strong>NATURALEZA: senal de REGIMEN, no de trade</strong>. El radar produce UN valor por dia, comun a TODOS
   los calendars que se abran ese dia (no distingue strike ni right). Su gemelo trade-level es
   <strong>BURST_SCORE_PURE</strong> (ex-post, rango [-1,+1]): mide el burst REALIZADO de cada trade individual
