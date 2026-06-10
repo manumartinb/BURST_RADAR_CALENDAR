@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>BURST RADAR - Calendar SPX (IV front/back relativity)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+<style>
+:root { --bg:#0d1117; --panel:#161b22; --text:#c9d1d9; --muted:#8b949e; --border:#30363d; }
+* { box-sizing: border-box; }
+body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--text); padding:16px; }
+.header { max-width:1200px; margin:0 auto 16px auto; display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; gap:12px; }
+h1 { font-size:18px; margin:0; font-weight:600; }
+.subtitle { color:var(--muted); font-size:13px; margin-top:2px; }
+.latest-group { display:flex; gap:8px; flex-wrap:wrap; }
+.latest { background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:9px 12px; min-width:150px; }
+.latest .v { font-size:23px; font-weight:700; }
+.latest .label { font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; }
+.latest .mini { font-size:11px; color:var(--muted); margin-top:3px; }
+.latest .hint { font-size:10.5px; color:#3fb950; margin-top:3px; font-weight:600; }
+.regime { display:inline-block; padding:2px 9px; border-radius:12px; font-size:11px; font-weight:600; margin-left:6px; vertical-align:middle; }
+.regime.VERDE { background:rgba(26,127,55,0.20); color:#3fb950; }
+.regime.AMBAR { background:rgba(154,103,0,0.20); color:#d29922; }
+.regime.ROJO { background:rgba(207,34,46,0.20); color:#f85149; }
+#chart { max-width:1200px; margin:0 auto; background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:8px; }
+.note { max-width:1200px; margin:12px auto; color:var(--muted); font-size:13px; line-height:1.55; background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:12px 14px; }
+.note strong { color:var(--text); }
+.note code { font-family:ui-monospace,Menlo,monospace; background:#21262d; padding:1px 5px; border-radius:3px; font-size:12px; color:var(--text); }
+.footer { max-width:1200px; margin:14px auto 0 auto; color:var(--muted); font-size:12px; text-align:center; }
+.section-title { max-width:1200px; margin:30px auto 6px auto; font-size:16px; font-weight:700; color:var(--text); border-bottom:2px solid var(--border); padding-bottom:6px; }
+section.evidence { max-width:1200px; margin:0 auto; display:flex; flex-direction:column; gap:18px; }
+.ev-card { background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:18px 22px; margin-top:14px; }
+.ev-card h2 { font-size:16px; margin:0 0 4px 0; color:var(--text); font-weight:600; }
+.ev-card .ev-tag { display:inline-block; font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:0.7px; margin-bottom:8px; }
+.ev-card p { font-size:13px; line-height:1.6; color:#b6bec9; margin:6px 0; }
+.ev-card p strong { color:var(--text); }
+.ev-card img { display:block; max-width:100%; height:auto; margin:12px auto; border:1px solid var(--border); border-radius:4px; }
+.ev-table { width:100%; border-collapse:collapse; font-size:12.5px; margin:10px 0 4px 0; }
+.ev-table th, .ev-table td { padding:6px 9px; border-bottom:1px solid var(--border); text-align:right; }
+.ev-table thead th { background:#21262d; color:var(--text); font-weight:600; border-bottom:1px solid #444c56; }
+.ev-table tbody tr:hover { background:rgba(88,166,255,0.06); }
+.ev-table th:first-child, .ev-table td:first-child { text-align:left; }
+.pos { color:#3fb950; font-weight:600; }
+.neg { color:#f85149; font-weight:600; }
+.pass { color:#3fb950; font-weight:700; }
+.rules { max-width:1200px; margin:18px auto; background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:16px 20px; }
+.rules h2 { font-size:15px; margin:0 0 8px 0; color:var(--text); font-weight:600; }
+.rules ul { font-size:13px; line-height:1.65; color:#b6bec9; margin:4px 0; padding-left:22px; }
+.rules code { font-family:ui-monospace,Menlo,monospace; background:#21262d; padding:1px 5px; border-radius:3px; font-size:12px; color:var(--text); }
+.rules .callout { background:#21262d; border-left:3px solid #58a6ff; padding:10px 14px; border-radius:4px; font-size:13px; color:var(--text); margin:10px 0; }
+.rules .callout.warn { border-left-color:#d29922; }
+.rules .callout.good { border-left-color:#3fb950; }
+.kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-top:12px; }
+.kpi { background:#21262d; border:1px solid var(--border); border-radius:4px; padding:9px 11px; }
+.kpi .k { font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; }
+.kpi .vv { font-size:17px; font-weight:700; color:var(--text); margin-top:3px; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div>
+    <h1>BURST RADAR - Calendar SPX</h1>
+    <div class="subtitle">Detector de viento de cola IV para calendars: relatividad front/back de la superficie 3D - percentil expanding ex-ante</div>
+  </div>
+  <div class="latest-group">
+    <div class="latest">
+      <div class="label">BURST RADAR <span id="ld-date">--</span></div>
+      <div><span class="v" id="ld-radar">--</span><span class="regime" id="lr-radar">--</span></div>
+      <div class="mini"><span id="ld-days">--</span> dias en regimen actual</div>
+      <div class="hint">&uarr; mas alto = muelle mas cargado (VERDE &ge;80)</div>
+    </div>
+    <div class="latest">
+      <div class="label">CAL RATIO (front/back)</div>
+      <div><span class="v" id="ld-ratio">--</span></div>
+      <div class="mini">IV25 front: <span id="ld-front">--</span>% &middot; back: <span id="ld-back">--</span>%</div>
+      <div class="hint">&darr; ratio bajo = contango = pro-BURST</div>
+    </div>
+  </div>
+</div>
+
+<div id="chart" style="height:580px;"></div>
+
+<div class="note">
+  <strong>Formula</strong>: <code>BURST_RADAR = 100 x (1 - pctE( IV_25d_front / IV_25d_back ))</code> &middot;
+  front = expiraciones SPX calls con DTE 25-35 (pata corta del calendar), back = DTE 38-52 (pata larga),
+  IV a delta 25, snapshot 10:30 ET, percentil expanding (warmup 252d, sin lookahead).
+  <br><strong>Mecanica</strong>: cuando la IV del vencimiento cercano esta historicamente BARATA respecto al lejano
+  (contango pronunciado en la zona del calendar), la term structure esta "tensada como un muelle". Al normalizarse
+  durante la vida del trade, la evolucion de IV favorece sistematicamente al calendar (fenomeno <strong>BURST</strong>:
+  ganancia inusual sin movimiento del SPX). Bandas: <strong>VERDE</strong> &ge;80, <strong>AMBAR</strong> 20-80, <strong>ROJO</strong> &le;20.
+  <br><strong>Grafico + panel = regimen DIARIO a hoy</strong> (ultima fecha de mercado en el surface store 10:30).
+  <strong>Tablas de abajo = backtest frozen</strong> (estudio 2026-06-10, Calendar Elite V1, 3,375 trades 2020-2025).
+</div>
+
+<div class="rules">
+  <h2>Que es y como usarlo</h2>
+  <div class="kpi-grid" id="kpi-baseline"></div>
+  <ul>
+    <li><strong>VERDE (&ge;80)</strong>: viento de cola IV probable. El componente burst aporta de media +1.15 pts/dia operado (vs +0.26 en AMBAR). La probabilidad de strong burst se multiplica.</li>
+    <li><strong>ROJO (&le;20)</strong>: la volatilidad RESTA (-2.13 pts/dia de componente burst). Zona de no-entrada o tamano reducido.</li>
+    <li><strong>Hipotesis pre-registrada</strong>: 1 solo componente (sin mineria de features). Audit anti-overfit dedicado: el composite de 8 alternativo fue DESCARTADO por sobre-diseno; esta version parsimoniosa lo iguala con menos riesgo.</li>
+  </ul>
+  <div class="callout warn"><strong>Lo que NO promete (seccion de honestidad, abajo)</strong>: VERDE no implica mas PnL total que un dia normal; el radar predice el componente IV (burst), no el PnL completo (que incluye camino del SPX y theta). Tampoco anticipa los periodos antiBURST (fisica distinta) ni predice la direccion del SPX.</div>
+</div>
+
+<div class="section-title">Seccion A &middot; Validacion APR (11/11 PASS)</div>
+<section class="evidence">
+  <div class="ev-card"><div class="ev-tag">A &middot; APR Layer A+B+C &middot; estudio 2026-06-10</div><h2>Bateria completa de robustez</h2>
+    <table class="ev-table" id="tbl-apr"></table>
+    <p><strong>B1 es la clave</strong>: partial_r +0.31 controlando SPX_Z50, BB_Width, GEX, HV20 e IV nivel.
+    El radar NO es un proxy del VIX ni del regimen conocido - es senal nueva de la geometria de la superficie.</p>
+  </div>
+</section>
+
+<div class="section-title">Seccion B &middot; Monotonia y robustez (frozen)</div>
+<section class="evidence">
+  <div class="ev-card"><div class="ev-tag">B1 &middot; deciles</div><h2>Escalera de deciles + LOYO</h2>
+    <table class="ev-table" id="tbl-deciles"></table>
+    <img src="evidence/lite_g1_monotonia.png" alt="monotonia" loading="lazy">
+    <table class="ev-table" id="tbl-loyo"></table>
+    <img src="evidence/lite_g2_robustez.png" alt="robustez" loading="lazy"></div>
+  <div class="ev-card"><div class="ev-tag">B2 &middot; predictabilidad</div><h2>Scatter + distribuciones condicionales</h2>
+    <img src="evidence/lite_g3_predictabilidad.png" alt="predictabilidad" loading="lazy"></div>
+</section>
+
+<div class="section-title">Seccion C &middot; Anticipacion de eventos BURST</div>
+<section class="evidence">
+  <div class="ev-card"><div class="ev-tag">C &middot; event-study</div><h2>22 de 36 eventos BURST anticipados</h2>
+    <p id="events-summary"></p>
+    <img src="evidence/lite_g4_eventos_temporal.png" alt="eventos" loading="lazy">
+    <img src="evidence/lite_DEFINITIVO_historico.png" alt="historico" loading="lazy"></div>
+</section>
+
+<div class="section-title">Seccion D &middot; Honestidad (lo que NO promete)</div>
+<section class="evidence">
+  <div class="ev-card"><div class="ev-tag">D &middot; day-level honesto</div><h2>El matiz que hay que conocer</h2>
+    <p>Midiendo por <strong>dia operado</strong> (un voto por dia, no por trade), el radar predice el
+    <strong>componente burst</strong> (r=+0.39, p=4e-17) pero el <strong>PnL total</strong> por dia apenas
+    distingue VERDE de AMBAR (r=+0.10): el camino del SPX y el theta pesan tanto como el viento IV.</p>
+    <table class="ev-table" id="tbl-semday"></table>
+    <table class="ev-table" id="tbl-semtrade"></table>
+    <ul style="font-size:13px;color:#b6bec9;line-height:1.6">
+      <li>Uso correcto: <strong>detector de viento IV</strong> + <strong>filtro de no-entrada en ROJO</strong>.</li>
+      <li>NO es un boton de "ganar mas en VERDE": el PnL total no lo confirma a nivel dia.</li>
+      <li>Los periodos antiBURST (deflacion de IV que mata calendars) NO se anticipan con este radar.</li>
+    </ul>
+    <img src="evidence/lite_g5_pnl_cohort.png" alt="pnl cohort" loading="lazy"></div>
+</section>
+
+<div class="footer">
+  Universo frozen: <span id="meta-universe">--</span> &middot; serie viva desde surface store 10:30 ET &middot;
+  formula canonica: BURST_RADAR_V1_Formula_(Calendar).md &middot; regenera: update_dashboard.py / daily_refresh.py
+</div>
+
+<script>
+fetch('data.json?v=' + Date.now()).then(r => r.json()).then(data => {
+  const L = data.latest;
+  document.getElementById('ld-date').textContent = L.date;
+  const setReg = (id, v) => { const e=document.getElementById(id); e.textContent=v; e.className='regime '+v; };
+  document.getElementById('ld-radar').textContent = L.radar.toFixed(1); setReg('lr-radar', L.regime);
+  document.getElementById('ld-days').textContent = L.days_in_regime;
+  document.getElementById('ld-ratio').textContent = L.cal_ratio.toFixed(4);
+  document.getElementById('ld-front').textContent = L.iv_front.toFixed(2);
+  document.getElementById('ld-back').textContent = L.iv_back.toFixed(2);
+
+  document.getElementById('meta-universe').textContent =
+    `Calendar Elite V1 ${data.meta.date_min} - ${data.meta.date_max} | estudio ${data.meta.study_date} | N=${data.meta.n_trades_frozen.toLocaleString()} trades`;
+
+  document.getElementById('kpi-baseline').innerHTML = `
+    <div class="kpi"><div class="k">r vs burst_pure@h15</div><div class="vv">${data.meta.r_pool_frozen>=0?'+':''}${data.meta.r_pool_frozen.toFixed(3)}</div></div>
+    <div class="kpi"><div class="k">LOYO</div><div class="vv">6/6 anos</div></div>
+    <div class="kpi"><div class="k">tau deciles</div><div class="vv">+0.867</div></div>
+    <div class="kpi"><div class="k">OOS 2024+</div><div class="vv">+0.409</div></div>
+    <div class="kpi"><div class="k">Eventos anticipados</div><div class="vv">${data.events.n_hits}/${data.events.n_events}</div></div>
+    <div class="kpi"><div class="k">N trades estudio</div><div class="vv">${data.meta.n_trades_frozen.toLocaleString()}</div></div>`;
+
+  // APR table
+  document.getElementById('tbl-apr').innerHTML =
+    '<thead><tr><th>Test</th><th>Criterio</th><th>Resultado</th><th>Veredicto</th></tr></thead><tbody>' +
+    data.apr.map(a => `<tr><td>${a.code}</td><td style="text-align:left">${a.test}</td><td>${a.result}</td><td class="pass">PASS</td></tr>`).join('') +
+    '</tbody>';
+
+  // Deciles
+  document.getElementById('tbl-deciles').innerHTML =
+    '<thead><tr><th>Decil RADAR</th><th>N</th><th>burst_pure@h15 medio</th><th>% burst &gt; 0</th><th>PnL_d015 medio</th></tr></thead><tbody>' +
+    data.deciles.map(d => {
+      const cls = d.bp_mean > 0 ? 'pos' : 'neg';
+      return `<tr><td>D${d.dec}</td><td>${d.n}</td><td class="${cls}">${d.bp_mean>=0?'+':''}${d.bp_mean.toFixed(2)}</td><td>${d.wr.toFixed(1)}%</td><td>${d.pnl15>=0?'+':''}${d.pnl15.toFixed(2)}</td></tr>`;
+    }).join('') + '</tbody>';
+
+  // LOYO
+  document.getElementById('tbl-loyo').innerHTML =
+    '<thead><tr><th>Ano</th><th>N</th><th>Spearman r</th></tr></thead><tbody>' +
+    data.loyo.map(l => `<tr><td>${l.year}</td><td>${l.n}</td><td class="${l.r>0?'pos':'neg'}">${l.r>=0?'+':''}${l.r.toFixed(3)}</td></tr>`).join('') + '</tbody>';
+
+  // Events
+  const E = data.events;
+  document.getElementById('events-summary').innerHTML =
+    `De los <strong>${E.n_events} eventos BURST cohort-wide confirmados</strong> (2020-2025), <strong>${E.n_hits} (${E.hit_pct}%)</strong> llegaron con radar pre-evento &ge;60. ` +
+    `Mediana del radar 10 dias antes del evento: <strong>${E.median_pre_burst}</strong> vs <strong>${E.median_control}</strong> en dias control (Mann-Whitney p ${E.mw_p}).`;
+
+  // Semaforo day-level (honesto)
+  document.getElementById('tbl-semday').innerHTML =
+    '<thead><tr><th>Por DIA operado</th><th>N dias</th><th>componente burst/dia</th><th>PnL total/dia</th></tr></thead><tbody>' +
+    data.sem_day.map(s => `<tr><td>${s.color}</td><td>${s.n_days}</td><td class="${s.bp_day>0?'pos':'neg'}">${s.bp_day>=0?'+':''}${s.bp_day.toFixed(2)}</td><td>${s.pnl_day>=0?'+':''}${s.pnl_day.toFixed(2)}</td></tr>`).join('') + '</tbody>';
+  document.getElementById('tbl-semtrade').innerHTML =
+    '<thead><tr><th>Por TRADE</th><th>N</th><th>burst medio</th><th>% burst &gt; 0</th><th>PnL_d015</th></tr></thead><tbody>' +
+    data.sem_trade.map(s => `<tr><td>${s.color}</td><td>${s.n}</td><td class="${s.bp_mean>0?'pos':'neg'}">${s.bp_mean>=0?'+':''}${s.bp_mean.toFixed(2)}</td><td>${s.hit.toFixed(1)}%</td><td>${s.pnl15>=0?'+':''}${s.pnl15.toFixed(2)}</td></tr>`).join('') + '</tbody>';
+
+  // Chart
+  const t = data.series.map(d=>d.t);
+  const traces = [
+    {x:t, y:data.series.map(d=>d.radar), name:'BURST RADAR', type:'scatter', mode:'lines',
+     line:{color:'#58a6ff',width:1.2}, hovertemplate:'%{x}<br>RADAR: <b>%{y:.1f}</b><extra></extra>'},
+    {x:t, y:data.series.map(d=>d.spx), name:'SPX', type:'scatter', mode:'lines',
+     line:{color:'#6e7681',width:0.9}, yaxis:'y2', connectgaps:true, hovertemplate:'%{x}<br>SPX: <b>%{y:,.0f}</b><extra></extra>'} ];
+  Plotly.newPlot('chart', traces, {
+    paper_bgcolor:'#161b22', plot_bgcolor:'#161b22', font:{color:'#c9d1d9',size:11},
+    margin:{l:48,r:54,t:46,b:64},
+    xaxis:{showgrid:true,gridcolor:'#21262d',zeroline:false,type:'date',
+      rangeselector:{buttons:[
+        {count:20,label:'20D',step:'day',stepmode:'backward'},
+        {count:90,label:'90D',step:'day',stepmode:'backward'},
+        {count:1,label:'1A',step:'year',stepmode:'backward'},
+        {count:3,label:'3A',step:'year',stepmode:'backward'},
+        {step:'all',label:'Todo'}],
+        bgcolor:'#21262d',activecolor:'#1f6feb',font:{color:'#c9d1d9',size:11},
+        bordercolor:'#30363d',borderwidth:1,x:0,y:1.16},
+      rangeslider:{visible:false}},
+    yaxis:{title:'BURST RADAR (0-100)',range:[0,100],showgrid:true,gridcolor:'#21262d'},
+    yaxis2:{title:'SPX',overlaying:'y',side:'right',showgrid:false,tickfont:{color:'#6e7681'}},
+    legend:{x:0,y:-0.16,orientation:'h',bgcolor:'rgba(22,27,34,0.7)'},
+    shapes:[{type:'line',xref:'paper',x0:0,x1:1,y0:80,y1:80,line:{color:'#3fb950',width:1,dash:'dot'}},
+            {type:'line',xref:'paper',x0:0,x1:1,y0:20,y1:20,line:{color:'#f85149',width:1,dash:'dot'}}]
+  }, {responsive:true, displayModeBar:false});
+}).catch(err => { document.getElementById('chart').innerHTML = '<div style="color:#f85149;text-align:center;padding:40px;font-family:monospace">Error: '+err.message+'</div>'; });
+</script>
+</body>
+</html>
