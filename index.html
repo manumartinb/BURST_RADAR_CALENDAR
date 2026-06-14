@@ -98,7 +98,7 @@ section.evidence { max-width:1200px; margin:0 auto; display:flex; flex-direction
   <br><strong>Paso 4 &middot; percentil expanding</strong>: <code>pctE(t)</code> = fraccion de los dias HISTORICOS (solo &lt; t,
   warmup 252 dias, cero lookahead) con CAL_RATIO &le; al de hoy.
   <br><strong>Paso 5 &middot; score</strong>: <code>BURST_RADAR = 100 x (1 - pctE)</code>. Se invierte porque ratio BAJO
-  (contango historicamente extremo) = muelle cargado = pro-BURST. Semaforo: <strong>VERDE</strong> &ge;80,
+  (contango historicamente extremo) = mas roll-down a favor = pro-BURST (ver LOGICA abajo). Semaforo: <strong>VERDE</strong> &ge;80,
   <strong>AMBAR</strong> 20-80, <strong>ROJO</strong> &le;20.
   <br><br><strong>LOGICA (roll-down carry)</strong>: en un calendar vendes la pata corta y compras la larga. La intuicion
   "vender caro" es correcta, pero el precio relevante NO es el de la front vs la back HOY, sino el de la front vs
