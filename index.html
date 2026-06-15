@@ -67,7 +67,7 @@ section.evidence { max-width:1200px; margin:0 auto; display:flex; flex-direction
       <div class="label">BURST RADAR <span id="ld-date">--</span></div>
       <div><span class="v" id="ld-radar">--</span><span class="regime" id="lr-radar">--</span></div>
       <div class="mini"><span id="ld-days">--</span> dias en regimen actual</div>
-      <div class="hint">&uarr; mas alto = mas roll-down a favor (VERDE &ge;80)</div>
+      <div class="hint">&uarr; mas alto = regimen IV mas a favor (VERDE &ge;80)</div>
     </div>
     <div class="latest">
       <div class="label">CAL RATIO (front/back)</div>
@@ -98,17 +98,21 @@ section.evidence { max-width:1200px; margin:0 auto; display:flex; flex-direction
   <br><strong>Paso 4 &middot; percentil expanding</strong>: <code>pctE(t)</code> = fraccion de los dias HISTORICOS (solo &lt; t,
   warmup 252 dias, cero lookahead) con CAL_RATIO &le; al de hoy.
   <br><strong>Paso 5 &middot; score</strong>: <code>BURST_RADAR = 100 x (1 - pctE)</code>. Se invierte porque ratio BAJO
-  (contango historicamente extremo) = mas roll-down a favor = pro-BURST (ver LOGICA abajo). Semaforo: <strong>VERDE</strong> &ge;80,
+  (contango historicamente extremo) = regimen en calma = pro-BURST (ver LOGICA abajo). Semaforo: <strong>VERDE</strong> &ge;80,
   <strong>AMBAR</strong> 20-80, <strong>ROJO</strong> &le;20.
-  <br><br><strong>LOGICA (roll-down carry)</strong>: en un calendar vendes la pata corta y compras la larga. La intuicion
-  "vender caro" es correcta, pero el precio relevante NO es el de la front vs la back HOY, sino el de la front vs
-  <em>su propio futuro</em>: en contango pronunciado (ratio bajo), la pata corta envejece bajando por una curva empinada
-  (DTE 30 &rarr; 15 = IV cada vez menor), de modo que la vendes "cara respecto a donde estara en 15 dias". Ese
-  deslizamiento (roll-down) derrite la IV de la pata corta mas rapido que la de la larga (curva mas plana en su zona)
-  y genera el <strong>BURST</strong>: ganancia inusual sin movimiento del SPX. Es la misma fisica que el carry de
-  futuros VIX en contango. <em>Evidencia del mecanismo</em>: el momentum del radar correlaciona POSITIVO con el burst
-  (+0.26) &mdash; si fuera "normalizacion/mean-reversion" del ratio seria negativo. Es carry por persistencia de la
-  pendiente, no un muelle que rebota.
+  <br><br><strong>LOGICA (regimen de volatilidad, NO roll-down)</strong>: en un calendar vendes la pata corta y
+  compras la larga, quedando <strong>net LONG vega</strong> (la larga pesa mas). La intuicion del roll-down &mdash; que
+  la pata corta se "derrite" bajando por la curva &mdash; NO se sostiene en los datos: medida con la superficie 3D, la
+  IV de la pata corta es casi <strong>sticky</strong> (apenas se mueve, no se desliza por la curva) y correlaciona
+  NEGATIVO (-0.27) con su propia prediccion de roll-down. El <strong>BURST lo carga la pata LARGA</strong>: explica el
+  72% de su varianza (la corta, 0.5%). El mecanismo real es de <strong>REGIMEN</strong>: en backwardation (ratio alto,
+  tras un susto de mercado) toda la superficie de IV revierte a la baja y el calendar net-long-vega se come un
+  <strong>vol-crush</strong> en la pata larga (burst muy negativo); en contango (ratio bajo, mercado en calma) esa
+  caida no ocurre y el burst se preserva. El radar compra <em>calma</em> para que la pata larga no sufra el vol-crush,
+  no para cosechar un carry de la pata corta. La analogia con el carry de futuros VIX <strong>NO aplica</strong>: la IV
+  de una opcion no converge a nada fijo y la front es sticky. <em>Evidencia</em>: reconstruido pata a pata, el burst
+  realizado se reproduce con r=+0.80; el radar lo predice (r=+0.39, 6/6 anos) y su momentum es positivo (+0.26) &mdash;
+  el regimen de contango tiende a persistir a favor de la estructura.
   <br><br><strong>NATURALEZA: senal de REGIMEN, no de trade</strong>. El radar produce UN valor por dia, comun a TODOS
   los calendars que se abran ese dia (no distingue strike ni right). Su gemelo trade-level es
   <strong>BURST_SCORE_PURE</strong> (ex-post, rango [-1,+1]): mide el burst REALIZADO de cada trade individual
