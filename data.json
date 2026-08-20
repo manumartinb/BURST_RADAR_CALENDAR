@@ -2,20 +2,20 @@
   "meta": {
     "date_min": "2020-01-02",
     "date_max": "2026-06-09",
-    "chart_date_max": "2026-08-19",
-    "chart_n_days": 1660,
+    "chart_date_max": "2026-08-20",
+    "chart_n_days": 1661,
     "study_date": "2026-06-10",
     "r_pool_frozen": 0.3901,
     "n_trades_frozen": 3375
   },
   "latest": {
-    "date": "2026-08-19",
-    "radar": 80.4,
-    "regime": "VERDE",
-    "cal_ratio": 0.9581,
-    "iv_front": 10.62,
-    "iv_back": 11.09,
-    "days_in_regime": 8
+    "date": "2026-08-20",
+    "radar": 73.0,
+    "regime": "AMBAR",
+    "cal_ratio": 0.9665,
+    "iv_front": 10.79,
+    "iv_back": 11.17,
+    "days_in_regime": 1
   },
   "series": [
     {
@@ -8316,6 +8316,11 @@
     {
       "t": "2026-08-19",
       "radar": 80.38,
+      "spx": 7712.24
+    },
+    {
+      "t": "2026-08-20",
+      "radar": 73.01,
       "spx": null
     }
   ],
